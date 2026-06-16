@@ -214,7 +214,7 @@
                                 <span id="metric-batch-cost" class="font-black text-stone-800 text-lg">$31.50</span>
                             </div>
                             <div class="flex justify-between items-center py-2 border-b border-stone-100">
-                                <span class="text-sm text-stone-500 font-semibold text-emerald-800">Costo mensual (30 días):</span>
+                                <span class="text-sm text-stone-500 font-semibold text-emerald-700">Costo mensual (30 días):</span>
                                 <span id="metric-monthly-cost" class="font-black text-emerald-700 text-lg">$70.88</span>
                             </div>
                             <div class="flex justify-between items-center py-2 border-b border-stone-100">
@@ -470,7 +470,7 @@
                     
                     <div id="sacos-select-container" class="flex items-center space-x-2">
                         <label for="target-batches" class="text-xs font-bold uppercase text-granja-700 whitespace-nowrap">Sacos (100 lbs c/u):</label>
-                        <select id="target-batches" class="bg-white border-2 border-emerald-300 rounded-lg p-1.5 font-bold text-granja-800 outline-none text-sm" onchange="calculateInventory()">
+                        <select id="target-batches" class="bg-white border-2 border-emerald-300 rounded-lg p-1.5 font-bold text-granja-800 outline-none text-sm" onchange="renderInventoryTable()">
                             <option value="1" selected>1 Lote (100 lbs)</option>
                             <option value="2">2 Lotes (200 lbs)</option>
                             <option value="3">3 Lotes (300 lbs)</option>
@@ -666,7 +666,7 @@
             // Dar estilo de botón activo
             document.getElementById(`btn-${tabId}`).className = "tab-btn px-4 py-2 rounded-lg bg-granja-600 text-white transition-all";
 
-            // Si es la pestaña de inventario, sincronizar la planificación
+            // Si es la pestaña de inventario, sincronizar la planificación y renderizar la tabla base
             if (tabId === 'suppliers') {
                 togglePlanMode();
             }
@@ -735,13 +735,13 @@
             const costPerEgg = estimatedEggs > 0 ? (dailyCost / estimatedEggs) : 0;
             document.getElementById('cost-per-egg').innerText = `$${costPerEgg.toFixed(2)}`;
 
-            // Actualizar tabla de mezcla
+            // Actualizar el validador visual del mezclador
             updateMixerWeightsUI(totalWeight, totalCost);
             
-            // Si la pestaña de inventario está activa, recalcular todo
+            // Si la pestaña de inventario está en el DOM, actualizar solo sus textos sin recrear inputs
             const planModeSelect = document.getElementById('plan-mode');
             if (planModeSelect) {
-                calculateInventory();
+                updateInventoryCalculations();
             }
         }
 
@@ -787,6 +787,8 @@
         function updateIngredientName(index, newName) {
             ingredients[index].name = newName;
             calculateCoreMetrics();
+            // Refrescar estructura del inventario por si cambiaron los nombres alternativos
+            renderInventoryTable();
         }
 
         // Guardar cambios de cantidad de ingredientes
@@ -794,7 +796,7 @@
             const val = parseFloat(qty) || 0;
             ingredients[index].qty = val;
             
-            // Actualizar subtotal individual rápidamente
+            // Actualizar subtotal individual de forma rápida
             const subtotal = val * ingredients[index].price;
             document.getElementById(`subtotal-${index}`).innerText = `$${subtotal.toFixed(2)}`;
 
@@ -806,7 +808,7 @@
             const val = parseFloat(price) || 0;
             ingredients[index].price = val;
 
-            // Actualizar subtotal individual rápidamente
+            // Actualizar subtotal individual de forma rápida
             const subtotal = ingredients[index].qty * val;
             document.getElementById(`subtotal-${index}`).innerText = `$${subtotal.toFixed(2)}`;
 
@@ -821,7 +823,7 @@
             const costLabel = document.getElementById('mixer-total-cost');
             const poundLabel = document.getElementById('mixer-pound-cost');
 
-            if (!bar) return; // Guard para evitar errores si carga antes del DOM
+            if (!bar) return; // Evitar errores si se llama antes del DOM
 
             badge.innerText = `${totalWeight.toFixed(1)} / 100.0 lbs`;
             costLabel.innerText = `$${totalCost.toFixed(2)}`;
@@ -829,7 +831,7 @@
             const costPerPound = totalWeight > 0 ? (totalCost / totalWeight) : 0;
             poundLabel.innerText = `$${costPerPound.toFixed(2)} / lb`;
 
-            // Calcular porcentaje para barra de progreso
+            // Calcular porcentaje de la barra de progreso
             const pct = Math.min(100, (totalWeight / 100) * 100);
             bar.style.width = `${pct}%`;
 
@@ -879,7 +881,7 @@
             });
 
             renderMixer();
-            showToast("Proporciones adjustedas proporcionalmente a 100 lbs");
+            showToast("Proporciones ajustadas proporcionalmente a 100 lbs");
         }
 
         // Aplicar Fórmula Prestablecida
@@ -895,6 +897,7 @@
             });
 
             renderMixer();
+            renderInventoryTable();
             showToast("Fórmula aplicada con éxito");
         }
 
@@ -905,10 +908,11 @@
                 item.name = presets.standard[index].name;
             });
             renderMixer();
+            renderInventoryTable();
             showToast("Mezcla restablecida a valores originales");
         }
 
-        /* --- LÓGICA EXCLUSIVA DEL INVENTARIO Y CONTROL DE BODEGA --- */
+        /* --- LÓGICA EXCLUSIVA DEL INVENTARIO Y CONTROL DE BODEGA (FOCO SEGURO) --- */
 
         // Activa o desactiva las visualizaciones del modo de planificación
         function togglePlanMode() {
@@ -932,11 +936,14 @@
                 document.getElementById('monthly-hens-display').innerText = hens;
                 document.getElementById('monthly-total-display').innerText = monthlyFeed.toFixed(1);
             }
-            calculateInventory();
+            renderInventoryTable();
         }
 
-        // Renderizar la tabla interactiva de inventario y calcular resultados de faltantes
-        function calculateInventory() {
+        // CONSTRUYE LA TABLA BASE DE INVENTARIO (Solo se llama una vez)
+        function renderInventoryTable() {
+            const container = document.getElementById('inventory-table-body');
+            if (!container) return;
+
             const planMode = document.getElementById('plan-mode').value;
             const batchMultiplier = parseInt(document.getElementById('target-batches').value) || 1;
             
@@ -950,16 +957,7 @@
             ingredients.forEach(item => formulaTotalWeight += item.qty);
             if (formulaTotalWeight === 0) formulaTotalWeight = 100;
 
-            const container = document.getElementById('inventory-table-body');
-            const listContainer = document.getElementById('shopping-list-items');
-            
-            if (!container || !listContainer) return;
-            
             container.innerHTML = '';
-            listContainer.innerHTML = '';
-
-            let totalDeficitCost = 0;
-            let hasDeficits = false;
 
             ingredients.forEach((item, index) => {
                 let requiredTotal = 0;
@@ -969,20 +967,86 @@
                     requiredTotal = (item.qty / formulaTotalWeight) * monthlyFeed; // libras requeridas por mes (30 días)
                 }
 
-                const deficit = Math.max(0, requiredTotal - item.stock); // lo que falta comprar
-                const deficitCost = deficit * item.price; // costo de lo que falta
+                const row = document.createElement('tr');
+                row.className = "hover:bg-stone-50/50 transition-colors";
+                row.innerHTML = `
+                    <td class="py-3 pr-2 font-medium text-stone-700">${item.name}</td>
+                    <td class="py-3 px-2 text-center font-bold text-stone-600" id="inv-req-${item.id}">${requiredTotal.toFixed(1)} lbs</td>
+                    <td class="py-3 px-2 text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                            <!-- NOTA: El ID es único y el input conserva su foco nativo al escribir -->
+                            <input type="number" step="0.5" min="0" id="inv-stock-input-${item.id}" value="${item.stock || ''}" placeholder="0.0" oninput="updateStock(${index}, this.value)" class="w-20 text-center font-bold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none bg-stone-50 hover:bg-white transition-all">
+                            <span class="text-stone-400 text-xs">lbs</span>
+                        </div>
+                    </td>
+                    <td class="py-3 pl-2 text-right" id="inv-deficit-cell-${item.id}">
+                        <!-- Se llena dinámicamente -->
+                    </td>
+                `;
+                container.appendChild(row);
+            });
 
-                // Colores para el estado del faltante
-                let deficitStyle = 'text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100';
-                let deficitText = '✓ Suficiente';
+            // Una vez construida la estructura, calcular los subtotales y faltantes iniciales
+            updateInventoryCalculations();
+        }
+
+        // ACTUALIZA SOLAMENTE LOS VALORES EN TIEMPO REAL (Foco Seguro, no interrumpe el teclado)
+        function updateInventoryCalculations() {
+            const planMode = document.getElementById('plan-mode').value;
+            const batchMultiplier = parseInt(document.getElementById('target-batches').value) || 1;
+            
+            const hens = parseInt(document.getElementById('hens-count').value) || 0;
+            const ration = parseFloat(document.getElementById('ration-per-hen').value) || 0.25;
+            const dailyFeed = hens * ration;
+            const monthlyFeed = dailyFeed * 30;
+
+            let formulaTotalWeight = 0;
+            ingredients.forEach(item => formulaTotalWeight += item.qty);
+            if (formulaTotalWeight === 0) formulaTotalWeight = 100;
+
+            const listContainer = document.getElementById('shopping-list-items');
+            if (!listContainer) return;
+            
+            listContainer.innerHTML = '';
+
+            let totalDeficitCost = 0;
+            let hasDeficits = false;
+
+            ingredients.forEach((item) => {
+                let requiredTotal = 0;
+                if (planMode === 'sacos') {
+                    requiredTotal = item.qty * batchMultiplier;
+                } else {
+                    requiredTotal = (item.qty / formulaTotalWeight) * monthlyFeed;
+                }
+
+                const deficit = Math.max(0, requiredTotal - item.stock);
+                const deficitCost = deficit * item.price;
+
+                // 1. Actualizar el valor de la celda de la meta necesaria por ingrediente
+                const reqCell = document.getElementById(`inv-req-${item.id}`);
+                if (reqCell) {
+                    reqCell.innerText = `${requiredTotal.toFixed(1)} lbs`;
+                }
+
+                // 2. Actualizar visualmente la celda de faltantes (badge de estado) sin reconstruir el input
+                const deficitCell = document.getElementById(`inv-deficit-cell-${item.id}`);
+                if (deficitCell) {
+                    let deficitStyle = 'text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100';
+                    let deficitText = '✓ Suficiente';
+
+                    if (deficit > 0) {
+                        deficitStyle = 'text-amber-700 font-black bg-amber-50 px-2 py-1 rounded-lg border border-amber-200';
+                        deficitText = `${deficit.toFixed(1)} lbs`;
+                    }
+                    deficitCell.innerHTML = `<span class="${deficitStyle}">${deficitText}</span>`;
+                }
 
                 if (deficit > 0) {
-                    deficitStyle = 'text-amber-700 font-black bg-amber-50 px-2 py-1 rounded-lg border border-amber-200';
-                    deficitText = `${deficit.toFixed(1)} lbs`;
                     totalDeficitCost += deficitCost;
                     hasDeficits = true;
 
-                    // Agregar item a la tarjeta visual de compras (Faltantes)
+                    // 3. Agregar elemento a la tarjeta lateral de compras de faltantes
                     const itemDiv = document.createElement('div');
                     itemDiv.className = "flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-200 animate-fadeIn";
                     itemDiv.innerHTML = `
@@ -1000,25 +1064,9 @@
                     `;
                     listContainer.appendChild(itemDiv);
                 }
-
-                // Fila de la tabla de inventario
-                const row = document.createElement('tr');
-                row.className = "hover:bg-stone-50/50 transition-colors";
-                row.innerHTML = `
-                    <td class="py-3 pr-2 font-medium text-stone-700">${item.name}</td>
-                    <td class="py-3 px-2 text-center font-bold text-stone-600">${requiredTotal.toFixed(1)} lbs</td>
-                    <td class="py-3 px-2 text-center">
-                        <div class="flex items-center justify-center space-x-1">
-                            <input type="number" step="0.5" min="0" value="${item.stock.toFixed(1)}" oninput="updateStock(${index}, this.value)" class="w-20 text-center font-bold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none bg-stone-50 hover:bg-white transition-all">
-                            <span class="text-stone-400 text-xs">lbs</span>
-                        </div>
-                    </td>
-                    <td class="py-3 pl-2 text-right"><span class="${deficitStyle}">${deficitText}</span></td>
-                `;
-                container.appendChild(row);
             });
 
-            // Si no hay faltantes
+            // Si todo el stock está completo
             if (!hasDeficits) {
                 listContainer.innerHTML = `
                     <div class="text-center py-8 px-4 border border-dashed border-stone-200 rounded-xl">
@@ -1029,16 +1077,21 @@
                 `;
             }
 
-            // Actualizar total financiero de faltantes
+            // Actualizar total requerido de faltantes
             document.getElementById('deficit-total-cost').innerText = `$${totalDeficitCost.toFixed(2)}`;
         }
 
-        // Actualizar el valor físico en bodega en tiempo real
+        // Guardar el valor físico de bodega sin recrear la tabla (Foco Seguro)
         function updateStock(index, value) {
             const val = parseFloat(value) || 0;
+            // Guardar valor en el arreglo global
             ingredients[index].stock = Math.max(0, val);
-            calculateInventory();
-            calculateCoreMetrics(); // Mantener costos sincronizados
+            
+            // Actualizar solo las matemáticas y la lista de compras lateral, sin reconstruir inputs
+            updateInventoryCalculations();
+            
+            // Sincronizar costos generales en segundo plano
+            calculateCoreMetrics();
         }
 
         // Mostrar Modal de Confirmación para el reinicio
@@ -1061,7 +1114,7 @@
                 item.stock = 0;
             });
             hideResetModal();
-            calculateInventory();
+            renderInventoryTable(); // Aquí sí reconstruimos porque queremos limpiar los inputs
             calculateCoreMetrics();
             showToast("Bodega reiniciada. Se han puesto las cantidades a 0.0 lbs.");
         }
@@ -1155,9 +1208,9 @@
         // Inicializar Aplicación al Cargar el Navegador
         window.onload = function() {
             renderMixer();
+            renderInventoryTable();
             calculateCoreMetrics();
         };
     </script>
 </body>
 </html>
-
