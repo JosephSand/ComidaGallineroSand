@@ -1,0 +1,1163 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comida Granja Sand - Sistema de Gestión Nutricional</title>
+    
+    <!-- Tailwind CSS para Estilos Modernos y Responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        granja: {
+                            50: '#f4f7f4',
+                            100: '#e5ebe6',
+                            600: '#2d6a4f',
+                            700: '#1b4332',
+                            800: '#081c15',
+                            accent: '#d97706',
+                            accentLight: '#fef3c7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['DM Sans', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fuentes de Google y Iconos de FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #f5f5f4;
+        }
+        .header-title {
+            font-family: 'Merriweather', serif;
+        }
+        /* Ocultar barra de desplazamiento en navegadores */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-stone-800 flex flex-col min-h-screen">
+
+    <!-- Notificación Personalizada -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-150%] transition-transform duration-300 bg-emerald-800 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3">
+        <span class="text-xl"><i class="fa-solid fa-circle-check text-amber-400"></i></span>
+        <span id="toast-message" class="font-medium text-sm">¡Acción realizada con éxito!</span>
+    </div>
+
+    <!-- Modal de Confirmación de Reinicio de Bodega -->
+    <div id="reset-modal" class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="text-center space-y-3">
+                <span class="inline-flex p-3 rounded-full bg-rose-50 text-rose-600 text-2xl"><i class="fa-solid fa-circle-question"></i></span>
+                <h3 class="font-bold text-lg text-stone-900">¿Reiniciar Control de Bodega?</h3>
+                <p class="text-sm text-stone-500 leading-relaxed">Esto restablecerá todas las cantidades físicas de tu inventario en bodega a <strong>0.0 lbs</strong> para que puedas iniciar un nuevo control físico de mes.</p>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="hideResetModal()" class="flex-1 py-2.5 rounded-xl border border-stone-200 hover:bg-stone-50 font-semibold text-stone-600 text-sm transition">Cancelar</button>
+                <button onclick="confirmResetBodega()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition">Sí, reiniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Encabezado de la App -->
+    <header class="bg-granja-700 text-white shadow-md py-4 px-6 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 p-2.5 rounded-xl shadow-inner text-granja-800">
+                    <i class="fa-solid fa-wheat-awn text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="header-title text-2xl font-bold tracking-tight">Granja Sand</h1>
+                    <p class="text-xs text-emerald-300 font-bold tracking-widest uppercase">Comida & Nutrición Ponedoras</p>
+                </div>
+            </div>
+            <!-- Navegación Principal -->
+            <nav class="flex items-center space-x-1 bg-granja-800 p-1.5 rounded-xl text-sm font-semibold">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn px-4 py-2 rounded-lg bg-granja-600 text-white transition-all">
+                    <i class="fa-solid fa-chart-pie mr-1.5"></i> Panel
+                </button>
+                <button onclick="switchTab('mixer')" id="btn-mixer" class="tab-btn px-4 py-2 rounded-lg text-emerald-100 hover:text-white transition-all">
+                    <i class="fa-solid fa-calculator mr-1.5"></i> Mezclador
+                </button>
+                <button onclick="switchTab('replacements')" id="btn-replacements" class="tab-btn px-4 py-2 rounded-lg text-emerald-100 hover:text-white transition-all">
+                    <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Sustitutos
+                </button>
+                <button onclick="switchTab('suppliers')" id="btn-suppliers" class="tab-btn px-4 py-2 rounded-lg text-emerald-100 hover:text-white transition-all">
+                    <i class="fa-solid fa-warehouse mr-1.5"></i> Inventario
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="max-w-6xl w-full mx-auto px-4 py-8 flex-grow">
+
+        <!-- TAB 1: PANEL DE CONTROL (DASHBOARD) -->
+        <section id="tab-dashboard" class="tab-content space-y-6">
+            
+            <!-- Banner de Introducción -->
+            <div class="bg-gradient-to-r from-granja-700 to-emerald-800 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 max-w-lg">
+                    <span class="bg-amber-500 text-granja-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Manejo Eficiente</span>
+                    <h2 class="header-title text-3xl md:text-4xl font-bold mt-3 mb-2">Nutrición de Precisión para tu Parvada</h2>
+                    <p class="text-emerald-100 text-sm md:text-base">Optimiza la producción diaria de huevos de tus ponedoras balanceando el alimento local con maíz y maicillo de Chalatenango.</p>
+                </div>
+                <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-10 translate-y-10">
+                    <i class="fa-solid fa-egg text-[200px]"></i>
+                </div>
+            </div>
+
+            <!-- Parámetros Rápidos & Cálculos -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Ajuste de Parvada (Entrada del Usuario) -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg text-granja-700"><i class="fa-solid fa-feather mr-2 text-amber-500"></i>Tu Parvada Activa</h3>
+                            <span class="text-xs font-bold px-2 py-1 bg-stone-100 rounded-lg text-stone-500">Editable</span>
+                        </div>
+                        <p class="text-sm text-stone-500 mb-6">Especifica cuántas ponedoras tienes y ajusta el consumo unitario para calcular las raciones precisas.</p>
+                        
+                        <!-- Control de Gallinas -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">Número de Gallinas</label>
+                                <div class="flex items-center space-x-3">
+                                    <button onclick="adjustHens(-5)" class="w-12 h-12 rounded-xl bg-stone-100 active:bg-stone-200 flex items-center justify-center text-lg font-bold text-stone-700 transition"><i class="fa-solid fa-minus"></i></button>
+                                    <input type="number" id="hens-count" value="30" class="flex-grow text-center text-2xl font-bold border-2 border-stone-200 focus:border-granja-600 rounded-xl py-2 outline-none" oninput="calculateCoreMetrics()">
+                                    <button onclick="adjustHens(5)" class="w-12 h-12 rounded-xl bg-stone-100 active:bg-stone-200 flex items-center justify-center text-lg font-bold text-stone-700 transition"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Control de Ración -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">Ración Diaria Sugerida</label>
+                                <select id="ration-per-hen" class="w-full bg-stone-50 border-2 border-stone-200 focus:border-granja-600 rounded-xl p-3 font-semibold text-stone-700 outline-none" onchange="calculateCoreMetrics()">
+                                    <option value="0.22">Liviana (0.22 lbs / 100g) - Clima Cálido</option>
+                                    <option value="0.25" selected>Estándar (0.25 lbs / 113g) - Óptima</option>
+                                    <option value="0.265">Robusta (0.265 lbs / 120g) - Alta Postura</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas de Alimentación (Resultados) -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg text-granja-700"><i class="fa-solid fa-scale-balanced mr-2 text-amber-500"></i>Consumo Calculado</h3>
+                            <span class="text-xs font-bold px-2 py-1 bg-emerald-50 text-granja-600 rounded-lg">Tiempo Real</span>
+                        </div>
+                        <p class="text-sm text-stone-500 mb-6">Métricas de consumo estimadas para tu parvada según el lote de 100 libras preparado.</p>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-stone-50 p-4 rounded-xl border border-stone-100">
+                                <span class="block text-xs text-stone-500 font-bold uppercase">Consumo Diario</span>
+                                <span id="metric-daily-feed" class="text-2xl font-black text-granja-700">7.5 lbs</span>
+                                <span id="metric-daily-g" class="block text-xs text-stone-400 font-medium">~3.4 kg</span>
+                            </div>
+                            <div class="bg-stone-50 p-4 rounded-xl border border-stone-100">
+                                <span class="block text-xs text-stone-500 font-bold uppercase">Duración Lote</span>
+                                <span id="metric-duration" class="text-2xl font-black text-amber-600">13.3 días</span>
+                                <span class="block text-xs text-stone-400 font-medium">De 100 lbs máx</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sugerencias Mensuales de Consumo y Lotes -->
+                    <div class="mt-4 pt-4 border-t border-stone-100 space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-stone-500">Consumo mensual (30 días):</span>
+                            <span id="metric-monthly-feed-total" class="font-bold text-stone-700">225.0 lbs</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-emerald-800">
+                            <span class="font-medium"><i class="fa-solid fa-boxes-stacked mr-1"></i> Lotes para completar el mes:</span>
+                            <span id="metric-monthly-batches" class="font-black text-sm text-granja-700">2.3 lotes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas Financieras (Costo del Lote y Mes) -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg text-granja-700"><i class="fa-solid fa-wallet mr-2 text-amber-500"></i>Costo de Operación</h3>
+                            <span class="text-xs font-bold px-2 py-1 bg-amber-50 text-amber-700 rounded-lg">Finanzas</span>
+                        </div>
+                        <p class="text-sm text-stone-500 mb-6">Basado en los precios asignados por ingrediente en tu pestaña de Mezclador.</p>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center py-2 border-b border-stone-100">
+                                <span class="text-sm text-stone-500 font-semibold">Costo por lote (100 lbs):</span>
+                                <span id="metric-batch-cost" class="font-black text-stone-800 text-lg">$31.50</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-stone-100">
+                                <span class="text-sm text-stone-500 font-semibold text-emerald-800">Costo mensual (30 días):</span>
+                                <span id="metric-monthly-cost" class="font-black text-emerald-700 text-lg">$70.88</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-stone-100">
+                                <span class="text-sm text-stone-500">Costo por libra:</span>
+                                <span id="metric-pound-cost" class="font-semibold text-stone-700">$0.32 / lb</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-sm text-stone-500">Gasto diario estimado:</span>
+                                <span id="metric-daily-cost" class="font-semibold text-stone-700">$2.36 / día</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start space-x-2 mt-4">
+                        <span class="text-amber-600 mt-0.5"><i class="fa-solid fa-lightbulb"></i></span>
+                        <p class="text-xs text-amber-800 leading-relaxed"><strong>Consejo:</strong> Si produces al menos 25 huevos diarios, tu costo aproximado por huevo es de <strong id="cost-per-egg">$0.09</strong> de puro alimento.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Gráfico / Tarjeta Informativa sobre Producción -->
+            <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-stone-200">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h3 class="font-bold text-xl text-granja-700"><i class="fa-solid fa-chart-line mr-2 text-amber-500"></i>Relación Alimento vs Postura de Huevo</h3>
+                        <p class="text-sm text-stone-500">Un lote balanceado evita el bajón de postura y asegura un cascarón firme y saludable.</p>
+                    </div>
+                    <button onclick="switchTab('mixer')" class="bg-granja-600 hover:bg-granja-700 active:scale-95 text-white font-bold text-sm px-5 py-3 rounded-xl transition flex items-center">
+                        <i class="fa-solid fa-cubes-stacked mr-2"></i> Diseñar mi Fórmula Ahora
+                    </button>
+                </div>
+                
+                <!-- Ilustración Vectorial Limpia de Estabilidad -->
+                <div class="w-full bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100">
+                    <div class="flex flex-col md:flex-row items-center justify-around gap-6 text-center py-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-stone-500 uppercase tracking-widest block">Fórmula de Grano Solo (Desbalanceada)</span>
+                            <span class="text-3xl font-bold text-stone-400">40% - 50%</span>
+                            <span class="text-xs text-stone-400 block">Postura irregular / Cascarones débiles</span>
+                        </div>
+                        <div class="hidden md:block text-2xl text-emerald-300"><i class="fa-solid fa-arrow-right-long animate-pulse"></i></div>
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-widest block">Fórmula Balanceada Granja Sand</span>
+                            <span class="text-3xl font-black text-emerald-600"><i class="fa-solid fa-circle-check mr-1 text-amber-500"></i> 85% - 92%</span>
+                            <span class="text-xs text-emerald-600 block">Postura constante / Cascarones de alta resistencia</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: MEZCLADOR INTELIGENTE (CALCULADORA & COSTOS) -->
+        <section id="tab-mixer" class="tab-content hidden space-y-6">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-stone-200 pb-4">
+                <div>
+                    <h2 class="header-title text-2xl font-bold text-granja-700">Diseñador y Mezclador de Lote</h2>
+                    <p class="text-sm text-stone-500">Prepara tu saco de comida manteniendo siempre un balance óptimo y controlando los precios de Chalatenango.</p>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-bold text-stone-600">Lote Máximo Permitido:</span>
+                    <span class="bg-amber-100 text-amber-800 font-extrabold px-3 py-1.5 rounded-lg text-sm border border-amber-300">100 Libras (1 Saco)</span>
+                </div>
+            </div>
+
+            <!-- Tabla de Mezcla Dinámica -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-stone-200 overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-granja-700"><i class="fa-solid fa-flask mr-2 text-amber-500"></i>Ingredientes de la Mezcla</h3>
+                        <button onclick="resetToDefaults()" class="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Reiniciar Fórmula
+                        </button>
+                    </div>
+
+                    <!-- Contenedor Responsivo de Tabla -->
+                    <div class="overflow-x-auto no-scrollbar -mx-6">
+                        <div class="inline-block min-w-full align-middle px-6">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                                <thead>
+                                    <tr class="text-left font-bold text-stone-500 uppercase text-xs tracking-wider">
+                                        <th class="pb-3 pr-2">Ingrediente / Alternativa</th>
+                                        <th class="pb-3 px-2 text-center w-24">Cantidad (lbs)</th>
+                                        <th class="pb-3 px-2 text-center w-28">Precio ($ / lb)</th>
+                                        <th class="pb-3 pl-2 text-right w-24">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ingredients-table-body" class="divide-y divide-stone-100">
+                                    <!-- Generado Dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen y Validador de la Mezcla -->
+                <div class="space-y-6">
+                    
+                    <!-- Validador de Proporción -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-base text-granja-700 mb-4"><i class="fa-solid fa-scale-unbalanced-flip mr-2 text-amber-500"></i>Estado del Lote</h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Indicador de Peso Actual -->
+                            <div>
+                                <div class="flex justify-between text-sm font-bold text-stone-700 mb-1.5">
+                                    <span>Peso Registrado:</span>
+                                    <span id="batch-weight-badge" class="text-emerald-600">100.0 / 100.0 lbs</span>
+                                </div>
+                                <div class="w-full bg-stone-100 rounded-full h-3 overflow-hidden">
+                                    <div id="batch-weight-bar" class="bg-emerald-600 h-full rounded-full transition-all duration-300" style="width: 100%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Alerta de Peso -->
+                            <div id="weight-status-alert" class="p-4 rounded-xl flex items-start space-x-2.5 text-xs font-medium">
+                                <!-- Dinámico -->
+                            </div>
+
+                            <!-- Resumen Rápido -->
+                            <div class="pt-4 border-t border-stone-100 space-y-2 text-sm text-stone-600">
+                                <div class="flex justify-between">
+                                    <span>Costo Estimado del Lote:</span>
+                                    <span id="mixer-total-cost" class="font-bold text-stone-800">$0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Costo por Libra:</span>
+                                    <span id="mixer-pound-cost" class="font-semibold text-stone-800">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Presets Rápidos -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-base text-granja-700 mb-3"><i class="fa-solid fa-bolt mr-2 text-amber-500"></i>Fórmulas Rápidas</h3>
+                        <p class="text-xs text-stone-500 mb-4">Aplica proporciones diseñadas según disponibilidad de materia prima en la zona.</p>
+                        
+                        <div class="space-y-2">
+                            <button onclick="applyPreset('standard')" class="w-full text-left p-3 rounded-xl border border-stone-200 hover:border-emerald-600 hover:bg-emerald-50/50 active:scale-98 transition flex items-center justify-between">
+                                <div>
+                                    <span class="block text-sm font-bold text-stone-800">Fórmula Estándar Sand</span>
+                                    <span class="block text-xxs text-stone-500">Maíz, Maicillo, Soya, Salvado, Calcio</span>
+                                </div>
+                                <span class="text-emerald-600"><i class="fa-solid fa-chevron-right"></i></span>
+                            </button>
+                            
+                            <button onclick="applyPreset('highProtein')" class="w-full text-left p-3 rounded-xl border border-stone-200 hover:border-emerald-600 hover:bg-emerald-50/50 active:scale-98 transition flex items-center justify-between">
+                                <div>
+                                    <span class="block text-sm font-bold text-stone-800">Fórmula Alta Postura</span>
+                                    <span class="block text-xxs text-stone-500">Incrementa Soya al 30% / Ideal para picos</span>
+                                </div>
+                                <span class="text-emerald-600"><i class="fa-solid fa-chevron-right"></i></span>
+                            </button>
+
+                            <button onclick="applyPreset('calciumBoost')" class="w-full text-left p-3 rounded-xl border border-stone-200 hover:border-emerald-600 hover:bg-emerald-50/50 active:scale-98 transition flex items-center justify-between">
+                                <div>
+                                    <span class="block text-sm font-bold text-stone-800">Refuerzo de Cascarón</span>
+                                    <span class="block text-xxs text-stone-500">Calcio al 10% / Ideal para huevos débiles</span>
+                                </div>
+                                <span class="text-emerald-600"><i class="fa-solid fa-chevron-right"></i></span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB 3: GUÍA DE SUSTITUTOS -->
+        <section id="tab-replacements" class="tab-content hidden space-y-6">
+            
+            <div class="border-b border-stone-200 pb-4">
+                <h2 class="header-title text-2xl font-bold text-granja-700">Alternativas Nutritivas de Emergencia</h2>
+                <p class="text-sm text-stone-500">Si un ingrediente escasea o sube de precio, puedes sustituirlo inteligentemente sin perder postura.</p>
+            </div>
+
+            <!-- Grid de Reemplazos -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Tarjeta 1: Soya -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 text-xl"><i class="fa-solid fa-seedling"></i></div>
+                        <h3 class="font-bold text-lg text-granja-700 mb-2">Alternativas a la Soya</h3>
+                        <p class="text-sm text-stone-600 leading-relaxed mb-4">La soya es la fuente de proteína (16-18%). Si no encuentras, puedes sustituir una fracción por:</p>
+                        
+                        <ul class="text-xs text-stone-600 space-y-2.5">
+                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Harina de Alfalfa:</strong> Excelente digestibilidad y aporta pigmento a la yema.</span></li>
+                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Guandul Quebrado:</strong> Leguminosa local muy rica en proteína cruda.</span></li>
+                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Harina de Pescado:</strong> Máxima calidad proteica (usar máx 5% del lote para no alterar el sabor del huevo).</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 2: Carbonato de Calcio -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-4 text-xl"><i class="fa-solid fa-egg"></i></div>
+                        <h3 class="font-bold text-lg text-granja-700 mb-2">Cáscaras de Huevo Recicladas</h3>
+                        <p class="text-sm text-stone-600 leading-relaxed mb-4">Si la conchilla recolectada es inviable y no tienes carbonato de caliza comercial a la mano, recicla tus propias cáscaras:</p>
+                        
+                        <ol class="text-xs text-stone-600 space-y-2.5 list-decimal list-inside">
+                            <li><strong class="text-granja-700">Lavar:</strong> Enjuaga para quitar restos de clara.</li>
+                            <li><strong class="text-granja-700">Hornear:</strong> Tuesta a 275°F (135°C) por 20 minutos para eliminar bacterias (Salmonella).</li>
+                            <li><strong class="text-granja-700">Molido:</strong> Tritura hasta textura de arena. Mezcla directamente con el alimento.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 3: Maíz / Maicillo -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 mb-4 text-xl"><i class="fa-solid fa-bowl-rice"></i></div>
+                        <h3 class="font-bold text-lg text-granja-700 mb-2">Energéticos Alternativos</h3>
+                        <p class="text-sm text-stone-600 leading-relaxed mb-4">El Maíz y el Maicillo son la base de energía. Si sufren escasez extrema, recurre a:</p>
+                        
+                        <ul class="text-xs text-stone-600 space-y-2.5">
+                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Yuca Cocida (Fría):</strong> Gran aporte de carbohidratos. Debe servirse totalmente fría y en trozos muy pequeños.</span></li>
+                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Pulimento de Arroz:</strong> Subproducto económico que aporta grasas saludables y energía.</span></li>
+                            <li class="flex items-start"><i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 mr-2"></i> <span><strong>Evitar estrictamente:</strong> Cítricos (limón, naranja), aguacate (piel/semilla), cebolla y frijol crudo.</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB 4: SUMINISTROS E INVENTARIO -->
+        <section id="tab-suppliers" class="tab-content hidden space-y-6">
+            
+            <div class="border-b border-stone-200 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="header-title text-2xl font-bold text-granja-700">Inventario y Suministros de Precisión</h2>
+                    <p class="text-sm text-stone-500">Haz el conteo físico de tu bodega, planifica cuántos sacos o qué cantidad mensual necesitas preparar, y copia los reportes.</p>
+                </div>
+                <!-- Planificación de Lotes o Mes Completo -->
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div class="flex items-center space-x-2">
+                        <label for="plan-mode" class="text-xs font-bold uppercase text-granja-700 whitespace-nowrap"><i class="fa-solid fa-sliders mr-1"></i> Planificar por:</label>
+                        <select id="plan-mode" class="bg-white border-2 border-emerald-300 rounded-lg p-1.5 font-bold text-granja-800 outline-none text-sm" onchange="togglePlanMode()">
+                            <option value="sacos" selected>Cantidad de Sacos</option>
+                            <option value="mensual">1 Mes Completo (30 días)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="sacos-select-container" class="flex items-center space-x-2">
+                        <label for="target-batches" class="text-xs font-bold uppercase text-granja-700 whitespace-nowrap">Sacos (100 lbs c/u):</label>
+                        <select id="target-batches" class="bg-white border-2 border-emerald-300 rounded-lg p-1.5 font-bold text-granja-800 outline-none text-sm" onchange="calculateInventory()">
+                            <option value="1" selected>1 Lote (100 lbs)</option>
+                            <option value="2">2 Lotes (200 lbs)</option>
+                            <option value="3">3 Lotes (300 lbs)</option>
+                            <option value="4">4 Lotes (400 lbs)</option>
+                            <option value="5">5 Lotes (500 lbs)</option>
+                            <option value="6">6 Lotes (600 lbs)</option>
+                            <option value="8">8 Lotes (800 lbs)</option>
+                            <option value="10">10 Lotes (1,000 lbs)</option>
+                        </select>
+                    </div>
+
+                    <div id="monthly-info-container" class="hidden text-xs text-granja-800 font-semibold bg-emerald-100/60 px-3 py-2 rounded-lg border border-emerald-200">
+                        <i class="fa-solid fa-info-circle mr-1"></i> Calculado para <span id="monthly-hens-display" class="font-bold">30</span> gallinas (~<span id="monthly-total-display" class="font-bold">225</span> lbs totales al mes)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interfaz de Inventario y Lista de Faltantes -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Tabla del Inventario Físico (Bodega) -->
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-stone-200 overflow-hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <div>
+                            <h3 class="font-bold text-lg text-granja-700"><i class="fa-solid fa-warehouse mr-2 text-amber-500"></i>Control en Bodega</h3>
+                            <span class="text-xs font-semibold text-stone-400">Introduce lo que tienes en físico</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <button onclick="copyBodegaList()" class="flex-grow sm:flex-grow-0 text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-2 rounded-xl border border-stone-300 transition flex items-center justify-center">
+                                <i class="fa-solid fa-copy mr-1.5 text-emerald-600"></i> Copiar Bodega (WA)
+                            </button>
+                            <button onclick="showResetModal()" class="flex-grow sm:flex-grow-0 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl border border-rose-200 transition flex items-center justify-center">
+                                <i class="fa-solid fa-trash-can mr-1.5 text-rose-600"></i> Reiniciar Bodega
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor Responsivo de Tabla de Inventario -->
+                    <div class="overflow-x-auto no-scrollbar -mx-6">
+                        <div class="inline-block min-w-full align-middle px-6">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                                <thead>
+                                    <tr class="text-left font-bold text-stone-500 uppercase text-xs tracking-wider">
+                                        <th class="pb-3 pr-2">Ingrediente</th>
+                                        <th class="pb-3 px-2 text-center w-28">Meta Necesaria</th>
+                                        <th class="pb-3 px-2 text-center w-32">Tengo en Bodega</th>
+                                        <th class="pb-3 pl-2 text-right w-28">Falta Comprar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table-body" class="divide-y divide-stone-100">
+                                    <!-- Generado Dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Faltantes a Comprar -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg text-granja-700"><i class="fa-solid fa-cart-shopping mr-2 text-amber-500"></i>Faltantes a Comprar</h3>
+                            <button onclick="copyDeficitShoppingList()" class="text-xs font-bold text-granja-600 hover:text-granja-700 flex items-center">
+                                <i class="fa-solid fa-copy mr-1"></i> Copiar
+                            </button>
+                        </div>
+                        <p class="text-xs text-stone-500 mb-4">Esta lista calcula exactamente las libras que te faltan comprar para cubrir la meta establecida.</p>
+                        
+                        <!-- Lista dinámica de faltantes -->
+                        <div id="shopping-list-items" class="space-y-3 max-h-[250px] overflow-y-auto pr-1">
+                            <!-- Inyectado dinámicamente -->
+                        </div>
+
+                        <!-- Costo Total de Faltantes -->
+                        <div class="mt-4 pt-4 border-t border-stone-100 flex justify-between items-center text-sm">
+                            <span class="font-semibold text-stone-500">Presupuesto requerido:</span>
+                            <span id="deficit-total-cost" class="font-black text-granja-700 text-lg">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-stone-100 mt-4">
+                        <button onclick="copyDeficitShoppingList()" class="w-full bg-granja-600 hover:bg-granja-700 active:scale-95 text-white font-bold py-3 px-4 rounded-xl transition text-sm flex items-center justify-center">
+                            <i class="fa-solid fa-clipboard-list mr-2"></i> Copiar Faltantes para WhatsApp
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Directorio de Suministros Relocalizado -->
+            <div class="pt-4">
+                <h3 class="font-bold text-lg text-granja-700 mb-4"><i class="fa-solid fa-map-location-dot mr-2 text-amber-500"></i>¿Dónde comprar en Nueva Concepción, Chalatenango?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200 flex flex-col justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-widest">Insumos y Concentrados</span>
+                            <h4 class="font-bold text-base text-stone-800">Agroservicio La Granja</h4>
+                            <p class="text-xs text-stone-500"><i class="fa-solid fa-location-dot mr-1"></i> Sucursales en el casco urbano.</p>
+                        </div>
+                        <span class="mt-3 block text-xxs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded w-fit">Harina Soya & Maíz</span>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200 flex flex-col justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-amber-600 uppercase tracking-widest">Suplementos y Premix</span>
+                            <h4 class="font-bold text-base text-stone-800">Agroveterinaria El Milagro</h4>
+                            <p class="text-xs text-stone-500"><i class="fa-solid fa-location-dot mr-1"></i> 6ta Calle Oriente.</p>
+                        </div>
+                        <span class="mt-3 block text-xxs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded w-fit">Premix de Postura</span>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200 flex flex-col justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Distribuidor Agrícola</span>
+                            <h4 class="font-bold text-base text-stone-800">Agroindustriales San José</h4>
+                            <p class="text-xs text-stone-500"><i class="fa-solid fa-location-dot mr-1"></i> Carretera Longitudinal del Norte.</p>
+                        </div>
+                        <span class="mt-3 block text-xxs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded w-fit">Carbonato de Calcio</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Pie de Página Fijo -->
+    <footer class="bg-stone-950 text-stone-400 py-6 text-center border-t border-stone-900 text-xs">
+        <div class="max-w-6xl mx-auto px-4 space-y-2">
+            <p class="font-bold text-stone-300">Granja Sand - Chalatenango, El Salvador</p>
+            <p>Manejo Eficiente de Alimentación Avícola. Diseñado para hosting en GitHub Pages.</p>
+        </div>
+    </footer>
+
+    <!-- LÓGICA DE PROGRAMACIÓN DE LA APP -->
+    <script>
+        // Configuración Inicial de Ingredientes (100 lbs) con soporte para Stock
+        let ingredients = [
+            { id: 'maiz', name: 'Maíz Amarillo Quebrado', qty: 27.5, price: 0.25, stock: 0, type: 'basic', options: ['Maíz Amarillo Quebrado', 'Maíz Blanco Quebrado'] },
+            { id: 'maicillo', name: 'Maicillo (Sorgo) Molido', qty: 27.5, price: 0.22, stock: 0, type: 'basic', options: ['Maicillo (Sorgo) Molido', 'Pulimento de Arroz'] },
+            { id: 'soya', name: 'Harina de Soya (Proteína)', qty: 25.0, price: 0.55, stock: 0, type: 'protein', options: ['Harina de Soya (Proteína)', 'Harina de Alfalfa', 'Harina de Pescado'] },
+            { id: 'salvado', name: 'Salvado de Trigo', qty: 8.0, price: 0.18, stock: 0, type: 'fiber', options: ['Salvado de Trigo', 'Afrecho de Cereal'] },
+            { id: 'calcio', name: 'Carbonato de Calcio', qty: 8.0, price: 0.12, stock: 0, type: 'calcium', options: ['Carbonato de Calcio', 'Piedra Caliza Molida', 'Cáscaras Horneadas'] },
+            { id: 'premix', name: 'Premix Vitaminas (Ponedora)', qty: 3.0, price: 1.80, stock: 0, type: 'premix', options: ['Premix Vitaminas (Ponedora)', 'Suplemento Concentrado'] },
+            { id: 'sal', name: 'Sal Común', qty: 1.0, price: 0.10, stock: 0, type: 'salt', options: ['Sal Común', 'Sal Mineralizada'] }
+        ];
+
+        // Definiciones de Fórmulas Preestablecidas
+        const presets = {
+            standard: [
+                { id: 'maiz', name: 'Maíz Amarillo Quebrado', qty: 27.5 },
+                { id: 'maicillo', name: 'Maicillo (Sorgo) Molido', qty: 27.5 },
+                { id: 'soya', name: 'Harina de Soya (Proteína)', qty: 25.0 },
+                { id: 'salvado', name: 'Salvado de Trigo', qty: 8.0 },
+                { id: 'calcio', name: 'Carbonato de Calcio', qty: 8.0 },
+                { id: 'premix', name: 'Premix Vitaminas (Ponedora)', qty: 3.0 },
+                { id: 'sal', name: 'Sal Común', qty: 1.0 }
+            ],
+            highProtein: [
+                { id: 'maiz', name: 'Maíz Amarillo Quebrado', qty: 25.0 },
+                { id: 'maicillo', name: 'Maicillo (Sorgo) Molido', qty: 25.0 },
+                { id: 'soya', name: 'Harina de Soya (Proteína)', qty: 30.0 },
+                { id: 'salvado', name: 'Salvado de Trigo', qty: 6.0 },
+                { id: 'calcio', name: 'Carbonato de Calcio', qty: 10.0 },
+                { id: 'premix', name: 'Premix Vitaminas (Ponedora)', qty: 3.0 },
+                { id: 'sal', name: 'Sal Común', qty: 1.0 }
+            ],
+            calciumBoost: [
+                { id: 'maiz', name: 'Maíz Amarillo Quebrado', qty: 26.5 },
+                { id: 'maicillo', name: 'Maicillo (Sorgo) Molido', qty: 26.5 },
+                { id: 'soya', name: 'Harina de Soya (Proteína)', qty: 23.0 },
+                { id: 'salvado', name: 'Salvado de Trigo', qty: 8.0 },
+                { id: 'calcio', name: 'Carbonato de Calcio', qty: 12.0 },
+                { id: 'premix', name: 'Premix Vitaminas (Ponedora)', qty: 3.0 },
+                { id: 'sal', name: 'Sal Común', qty: 1.0 }
+            ]
+        };
+
+        // Cambiar entre pestañas
+        function switchTab(tabId) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            // Remover estilos activos de todos los botones
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-lg text-emerald-100 hover:text-white transition-all";
+            });
+
+            // Mostrar la pestaña seleccionada
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            // Dar estilo de botón activo
+            document.getElementById(`btn-${tabId}`).className = "tab-btn px-4 py-2 rounded-lg bg-granja-600 text-white transition-all";
+
+            // Si es la pestaña de inventario, sincronizar la planificación
+            if (tabId === 'suppliers') {
+                togglePlanMode();
+            }
+        }
+
+        // Ajustar número de gallinas (+ / -)
+        function adjustHens(amount) {
+            let input = document.getElementById('hens-count');
+            let val = parseInt(input.value) || 0;
+            val = Math.max(0, val + amount);
+            input.value = val;
+            calculateCoreMetrics();
+        }
+
+        // Mostrar Alertas Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-[-150%]');
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-150%]');
+            }, 3000);
+        }
+
+        // Calcular Métricas Principales (Dashboard)
+        function calculateCoreMetrics() {
+            const hens = parseInt(document.getElementById('hens-count').value) || 0;
+            const ration = parseFloat(document.getElementById('ration-per-hen').value) || 0.25;
+
+            // Consumo diario
+            const dailyFeed = hens * ration; // en lbs
+            const dailyKg = dailyFeed * 0.453592; // lbs a kg
+
+            document.getElementById('metric-daily-feed').innerText = `${dailyFeed.toFixed(1)} lbs`;
+            document.getElementById('metric-daily-g').innerText = `~${dailyKg.toFixed(1)} kg`;
+
+            // Duración del Lote (Basado en 100 lbs de alimento)
+            const duration = dailyFeed > 0 ? (100 / dailyFeed).toFixed(1) : 0;
+            document.getElementById('metric-duration').innerText = `${duration} días`;
+
+            // Calcular mensual total y lotes/sacos sugeridos para completar el mes
+            const monthlyFeed = dailyFeed * 30;
+            const monthlyBatches = monthlyFeed / 100;
+            document.getElementById('metric-monthly-feed-total').innerText = `${monthlyFeed.toFixed(1)} lbs`;
+            document.getElementById('metric-monthly-batches').innerText = `${monthlyBatches.toFixed(1)} lotes`;
+
+            // Calcular Financieros
+            let totalCost = 0;
+            let totalWeight = 0;
+            ingredients.forEach(item => {
+                totalCost += item.qty * item.price;
+                totalWeight += item.qty;
+            });
+
+            const poundCost = totalWeight > 0 ? (totalCost / totalWeight) : 0;
+            const dailyCost = dailyFeed * poundCost;
+            const monthlyCost = dailyCost * 30;
+
+            document.getElementById('metric-batch-cost').innerText = `$${totalCost.toFixed(2)}`;
+            document.getElementById('metric-monthly-cost').innerText = `$${monthlyCost.toFixed(2)}`;
+            document.getElementById('metric-pound-cost').innerText = `$${poundCost.toFixed(2)} / lb`;
+            document.getElementById('metric-daily-cost').innerText = `$${dailyCost.toFixed(2)} / día`;
+
+            // Asumiendo postura estable de 85% de las gallinas
+            const estimatedEggs = Math.round(hens * 0.85);
+            const costPerEgg = estimatedEggs > 0 ? (dailyCost / estimatedEggs) : 0;
+            document.getElementById('cost-per-egg').innerText = `$${costPerEgg.toFixed(2)}`;
+
+            // Actualizar tabla de mezcla
+            updateMixerWeightsUI(totalWeight, totalCost);
+            
+            // Si la pestaña de inventario está activa, recalcular todo
+            const planModeSelect = document.getElementById('plan-mode');
+            if (planModeSelect) {
+                calculateInventory();
+            }
+        }
+
+        // Generar filas del mezclador en el DOM
+        function renderMixer() {
+            const container = document.getElementById('ingredients-table-body');
+            container.innerHTML = '';
+
+            ingredients.forEach((item, index) => {
+                const subtotal = item.qty * item.price;
+                
+                // Generar las opciones del dropdown de ingredientes
+                let selectOptions = '';
+                item.options.forEach(opt => {
+                    const isSelected = item.name === opt ? 'selected' : '';
+                    selectOptions += `<option value="${opt}" ${isSelected}>${opt}</option>`;
+                });
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-3 pr-2">
+                        <select onchange="updateIngredientName(${index}, this.value)" class="bg-stone-50 border border-stone-200 rounded-lg p-1.5 font-semibold text-stone-700 w-full outline-none">
+                            ${selectOptions}
+                        </select>
+                    </td>
+                    <td class="py-3 px-2 text-center">
+                        <input type="number" step="0.1" value="${item.qty}" oninput="updateIngredientQty(${index}, this.value)" class="w-20 text-center font-bold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none">
+                    </td>
+                    <td class="py-3 px-2 text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span class="text-stone-400">$</span>
+                            <input type="number" step="0.01" value="${item.price}" oninput="updateIngredientPrice(${index}, this.value)" class="w-16 text-center font-semibold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none">
+                        </div>
+                    </td>
+                    <td id="subtotal-${index}" class="py-3 pl-2 text-right font-bold text-stone-700">$${subtotal.toFixed(2)}</td>
+                `;
+                container.appendChild(row);
+            });
+            calculateCoreMetrics();
+        }
+
+        // Guardar cambios del selector de alternativas
+        function updateIngredientName(index, newName) {
+            ingredients[index].name = newName;
+            calculateCoreMetrics();
+        }
+
+        // Guardar cambios de cantidad de ingredientes
+        function updateIngredientQty(index, qty) {
+            const val = parseFloat(qty) || 0;
+            ingredients[index].qty = val;
+            
+            // Actualizar subtotal individual rápidamente
+            const subtotal = val * ingredients[index].price;
+            document.getElementById(`subtotal-${index}`).innerText = `$${subtotal.toFixed(2)}`;
+
+            calculateCoreMetrics();
+        }
+
+        // Guardar cambios de precios de ingredientes
+        function updateIngredientPrice(index, price) {
+            const val = parseFloat(price) || 0;
+            ingredients[index].price = val;
+
+            // Actualizar subtotal individual rápidamente
+            const subtotal = ingredients[index].qty * val;
+            document.getElementById(`subtotal-${index}`).innerText = `$${subtotal.toFixed(2)}`;
+
+            calculateCoreMetrics();
+        }
+
+        // Actualiza el Validador Visual del Saco (100 Lbs Máx)
+        function updateMixerWeightsUI(totalWeight, totalCost) {
+            const bar = document.getElementById('batch-weight-bar');
+            const badge = document.getElementById('batch-weight-badge');
+            const alertBox = document.getElementById('weight-status-alert');
+            const costLabel = document.getElementById('mixer-total-cost');
+            const poundLabel = document.getElementById('mixer-pound-cost');
+
+            if (!bar) return; // Guard para evitar errores si carga antes del DOM
+
+            badge.innerText = `${totalWeight.toFixed(1)} / 100.0 lbs`;
+            costLabel.innerText = `$${totalCost.toFixed(2)}`;
+            
+            const costPerPound = totalWeight > 0 ? (totalCost / totalWeight) : 0;
+            poundLabel.innerText = `$${costPerPound.toFixed(2)} / lb`;
+
+            // Calcular porcentaje para barra de progreso
+            const pct = Math.min(100, (totalWeight / 100) * 100);
+            bar.style.width = `${pct}%`;
+
+            if (totalWeight === 100) {
+                bar.className = "bg-emerald-600 h-full rounded-full transition-all duration-300";
+                badge.className = "text-emerald-600 font-bold";
+                alertBox.className = "p-4 rounded-xl flex items-start space-x-2.5 text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-800";
+                alertBox.innerHTML = `
+                    <span class="text-emerald-600"><i class="fa-solid fa-circle-check"></i></span>
+                    <p><strong>Fórmula Balanceada:</strong> Tienes exactamente 100 lbs (1 saco completo). La mezcla es homogénea y segura para consumo.</p>
+                `;
+            } else if (totalWeight > 100) {
+                bar.className = "bg-rose-500 h-full rounded-full transition-all duration-300";
+                badge.className = "text-rose-500 font-bold";
+                alertBox.className = "p-4 rounded-xl flex items-start space-x-2.5 text-xs font-medium bg-rose-50 border border-rose-200 text-rose-800";
+                alertBox.innerHTML = `
+                    <span class="text-rose-500"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    <div>
+                        <p><strong>¡Exceso de Peso!</strong> El peso total es de <strong>${totalWeight.toFixed(1)} lbs</strong>. Recuerda que el máximo de preparación física sugerido es de 100 lbs para un mezclado uniforme manual.</p>
+                        <button onclick="scaleBatchTo(100)" class="mt-2 text-xs font-bold text-rose-700 underline flex items-center"><i class="fa-solid fa-compress mr-1"></i> Forzar ajuste automático a 100 lbs</button>
+                    </div>
+                `;
+            } else {
+                bar.className = "bg-amber-500 h-full rounded-full transition-all duration-300";
+                badge.className = "text-amber-500 font-bold";
+                alertBox.className = "p-4 rounded-xl flex items-start space-x-2.5 text-xs font-medium bg-amber-50 border border-amber-200 text-amber-800";
+                alertBox.innerHTML = `
+                    <span class="text-amber-500"><i class="fa-solid fa-circle-info"></i></span>
+                    <div>
+                        <p>Faltan <strong>${(100 - totalWeight).toFixed(1)} lbs</strong> para completar el saco de 100 lbs estándar. Puedes seguir escalando ingredientes.</p>
+                        <button onclick="scaleBatchTo(100)" class="mt-2 text-xs font-bold text-amber-700 underline flex items-center"><i class="fa-solid fa-expand mr-1"></i> Escalar proporciones proporcionalmente a 100 lbs</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Escalar la mezcla actual de forma proporcional a un peso específico
+        function scaleBatchTo(targetWeight) {
+            let currentTotal = 0;
+            ingredients.forEach(item => currentTotal += item.qty);
+
+            if (currentTotal === 0) return;
+
+            const factor = targetWeight / currentTotal;
+            ingredients.forEach(item => {
+                item.qty = parseFloat((item.qty * factor).toFixed(1));
+            });
+
+            renderMixer();
+            showToast("Proporciones adjustedas proporcionalmente a 100 lbs");
+        }
+
+        // Aplicar Fórmula Prestablecida
+        function applyPreset(presetKey) {
+            const selectedPreset = presets[presetKey];
+            if (!selectedPreset) return;
+
+            ingredients.forEach(item => {
+                const presetData = selectedPreset.find(p => p.id === item.id);
+                if (presetData) {
+                    item.qty = presetData.qty;
+                }
+            });
+
+            renderMixer();
+            showToast("Fórmula aplicada con éxito");
+        }
+
+        // Restablecer ingredientes por defecto
+        function resetToDefaults() {
+            ingredients.forEach((item, index) => {
+                item.qty = presets.standard[index].qty;
+                item.name = presets.standard[index].name;
+            });
+            renderMixer();
+            showToast("Mezcla restablecida a valores originales");
+        }
+
+        /* --- LÓGICA EXCLUSIVA DEL INVENTARIO Y CONTROL DE BODEGA --- */
+
+        // Activa o desactiva las visualizaciones del modo de planificación
+        function togglePlanMode() {
+            const planMode = document.getElementById('plan-mode').value;
+            const sacosContainer = document.getElementById('sacos-select-container');
+            const monthlyContainer = document.getElementById('monthly-info-container');
+            
+            if (planMode === 'sacos') {
+                sacosContainer.classList.remove('hidden');
+                monthlyContainer.classList.add('hidden');
+            } else {
+                sacosContainer.classList.add('hidden');
+                monthlyContainer.classList.remove('hidden');
+                
+                // Actualizar textos informativos de consumo mensual total
+                const hens = parseInt(document.getElementById('hens-count').value) || 0;
+                const ration = parseFloat(document.getElementById('ration-per-hen').value) || 0.25;
+                const dailyFeed = hens * ration;
+                const monthlyFeed = dailyFeed * 30;
+                
+                document.getElementById('monthly-hens-display').innerText = hens;
+                document.getElementById('monthly-total-display').innerText = monthlyFeed.toFixed(1);
+            }
+            calculateInventory();
+        }
+
+        // Renderizar la tabla interactiva de inventario y calcular resultados de faltantes
+        function calculateInventory() {
+            const planMode = document.getElementById('plan-mode').value;
+            const batchMultiplier = parseInt(document.getElementById('target-batches').value) || 1;
+            
+            const hens = parseInt(document.getElementById('hens-count').value) || 0;
+            const ration = parseFloat(document.getElementById('ration-per-hen').value) || 0.25;
+            const dailyFeed = hens * ration;
+            const monthlyFeed = dailyFeed * 30;
+
+            // Peso total actual en el mezclador para distribución proporcional
+            let formulaTotalWeight = 0;
+            ingredients.forEach(item => formulaTotalWeight += item.qty);
+            if (formulaTotalWeight === 0) formulaTotalWeight = 100;
+
+            const container = document.getElementById('inventory-table-body');
+            const listContainer = document.getElementById('shopping-list-items');
+            
+            if (!container || !listContainer) return;
+            
+            container.innerHTML = '';
+            listContainer.innerHTML = '';
+
+            let totalDeficitCost = 0;
+            let hasDeficits = false;
+
+            ingredients.forEach((item, index) => {
+                let requiredTotal = 0;
+                if (planMode === 'sacos') {
+                    requiredTotal = item.qty * batchMultiplier; // libras requeridas por sacos
+                } else {
+                    requiredTotal = (item.qty / formulaTotalWeight) * monthlyFeed; // libras requeridas por mes (30 días)
+                }
+
+                const deficit = Math.max(0, requiredTotal - item.stock); // lo que falta comprar
+                const deficitCost = deficit * item.price; // costo de lo que falta
+
+                // Colores para el estado del faltante
+                let deficitStyle = 'text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100';
+                let deficitText = '✓ Suficiente';
+
+                if (deficit > 0) {
+                    deficitStyle = 'text-amber-700 font-black bg-amber-50 px-2 py-1 rounded-lg border border-amber-200';
+                    deficitText = `${deficit.toFixed(1)} lbs`;
+                    totalDeficitCost += deficitCost;
+                    hasDeficits = true;
+
+                    // Agregar item a la tarjeta visual de compras (Faltantes)
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = "flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-200 animate-fadeIn";
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <div>
+                                <span class="text-xs font-bold text-stone-700 block">${item.name}</span>
+                                <span class="text-xxs text-stone-400 block">$${item.price.toFixed(2)}/lb</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-extrabold text-granja-700 bg-amber-100/50 border border-amber-200 px-2.5 py-1 rounded-lg">${deficit.toFixed(1)} lbs</span>
+                            <span class="block text-xxs font-semibold text-stone-500 mt-1">$${deficitCost.toFixed(2)}</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(itemDiv);
+                }
+
+                // Fila de la tabla de inventario
+                const row = document.createElement('tr');
+                row.className = "hover:bg-stone-50/50 transition-colors";
+                row.innerHTML = `
+                    <td class="py-3 pr-2 font-medium text-stone-700">${item.name}</td>
+                    <td class="py-3 px-2 text-center font-bold text-stone-600">${requiredTotal.toFixed(1)} lbs</td>
+                    <td class="py-3 px-2 text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                            <input type="number" step="0.5" min="0" value="${item.stock.toFixed(1)}" oninput="updateStock(${index}, this.value)" class="w-20 text-center font-bold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none bg-stone-50 hover:bg-white transition-all">
+                            <span class="text-stone-400 text-xs">lbs</span>
+                        </div>
+                    </td>
+                    <td class="py-3 pl-2 text-right"><span class="${deficitStyle}">${deficitText}</span></td>
+                `;
+                container.appendChild(row);
+            });
+
+            // Si no hay faltantes
+            if (!hasDeficits) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-8 px-4 border border-dashed border-stone-200 rounded-xl">
+                        <span class="text-3xl"><i class="fa-solid fa-circle-check text-emerald-500"></i></span>
+                        <p class="text-xs font-bold text-stone-700 mt-2">¡Todo cubierto!</p>
+                        <p class="text-xxs text-stone-400 mt-1">Tienes suficientes existencias en bodega para completar la planificación seleccionada.</p>
+                    </div>
+                `;
+            }
+
+            // Actualizar total financiero de faltantes
+            document.getElementById('deficit-total-cost').innerText = `$${totalDeficitCost.toFixed(2)}`;
+        }
+
+        // Actualizar el valor físico en bodega en tiempo real
+        function updateStock(index, value) {
+            const val = parseFloat(value) || 0;
+            ingredients[index].stock = Math.max(0, val);
+            calculateInventory();
+            calculateCoreMetrics(); // Mantener costos sincronizados
+        }
+
+        // Mostrar Modal de Confirmación para el reinicio
+        function showResetModal() {
+            const modal = document.getElementById('reset-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.remove('scale-95');
+        }
+
+        // Ocultar Modal de Confirmación
+        function hideResetModal() {
+            const modal = document.getElementById('reset-modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.add('scale-95');
+        }
+
+        // Confirmar y vaciar bodega física para iniciar un nuevo mes
+        function confirmResetBodega() {
+            ingredients.forEach(item => {
+                item.stock = 0;
+            });
+            hideResetModal();
+            calculateInventory();
+            calculateCoreMetrics();
+            showToast("Bodega reiniciada. Se han puesto las cantidades a 0.0 lbs.");
+        }
+
+        // Copiar el estado actual de la bodega física para llevar registros en WhatsApp
+        function copyBodegaList() {
+            let listText = `📦 *REPORTE DE BODEGA - Granja Sand* 🐔\n`;
+            listText += `📅 _Fecha: ${new Date().toLocaleDateString()}_\n`;
+            listText += `📋 _Existencias físicas actuales:_\n\n`;
+
+            ingredients.forEach(item => {
+                listText += `• *${item.name}*: ${item.stock.toFixed(1)} lbs\n`;
+            });
+
+            listText += `\n💻 _Enviado desde el sistema de control de Granja Sand._`;
+
+            // Copiado seguro compatible con portapapeles en iFrames
+            const tempInput = document.createElement('textarea');
+            tempInput.value = listText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showToast("¡Reporte de Bodega copiado para WhatsApp!");
+        }
+
+        // Copiar Lista de Compras de Faltantes al Portapapeles (WhatsApp)
+        function copyDeficitShoppingList() {
+            const planMode = document.getElementById('plan-mode').value;
+            const batchMultiplier = parseInt(document.getElementById('target-batches').value) || 1;
+            
+            const hens = parseInt(document.getElementById('hens-count').value) || 0;
+            const ration = parseFloat(document.getElementById('ration-per-hen').value) || 0.25;
+            const dailyFeed = hens * ration;
+            const monthlyFeed = dailyFeed * 30;
+
+            let listText = `🐔 *LISTA DE COMPRAS (FALTANTES) - Granja Sand* 🐔\n`;
+            listText += `📅 _Fecha de generación: ${new Date().toLocaleDateString()}_\n`;
+            
+            if (planMode === 'sacos') {
+                listText += `📦 Planificación para: *${batchMultiplier} Saco(s)* (100 lbs c/u)\n`;
+            } else {
+                listText += `🗓️ Planificación para: *1 Mes Completo* (30 días para ${hens} gallinas)\n`;
+                listText += `⚖️ Consumo mensual requerido: ~${monthlyFeed.toFixed(1)} lbs de alimento total\n`;
+            }
+            listText += `\n`;
+
+            let hasDeficits = false;
+            let totalDeficitCost = 0;
+
+            // Peso total actual en el mezclador para distribución proporcional
+            let formulaTotalWeight = 0;
+            ingredients.forEach(item => formulaTotalWeight += item.qty);
+            if (formulaTotalWeight === 0) formulaTotalWeight = 100;
+
+            ingredients.forEach(item => {
+                let requiredTotal = 0;
+                if (planMode === 'sacos') {
+                    requiredTotal = item.qty * batchMultiplier;
+                } else {
+                    requiredTotal = (item.qty / formulaTotalWeight) * monthlyFeed;
+                }
+                
+                const deficit = Math.max(0, requiredTotal - item.stock);
+                if (deficit > 0) {
+                    const cost = deficit * item.price;
+                    listText += `🛒 *${item.name}*: Comprar *${deficit.toFixed(1)} lbs* (Est. $${cost.toFixed(2)})\n`;
+                    totalDeficitCost += cost;
+                    hasDeficits = true;
+                }
+            });
+
+            if (!hasDeficits) {
+                listText += `✅ ¡No necesitas comprar nada! Tienes existencias suficientes en bodega para cubrir la meta. 🎉\n`;
+            } else {
+                listText += `\n💵 *Presupuesto Estimado a Gastar:* $${totalDeficitCost.toFixed(2)}\n📍 *Puntos de Compra:* Nueva Concepción, Chalatenango.`;
+            }
+
+            // Copiado seguro compatible con portapapeles en iFrames
+            const tempInput = document.createElement('textarea');
+            tempInput.value = listText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showToast("¡Faltantes copiados al portapapeles!");
+        }
+
+        // Inicializar Aplicación al Cargar el Navegador
+        window.onload = function() {
+            renderMixer();
+            calculateCoreMetrics();
+        };
+    </script>
+</body>
+</html>
+
