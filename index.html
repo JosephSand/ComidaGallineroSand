@@ -390,62 +390,17 @@
 
         </section>
 
-        <!-- TAB 3: GUÍA DE SUSTITUTOS -->
+        <!-- TAB 3: GUÍA DE SUSTITUTOS DINÁMICOS -->
         <section id="tab-replacements" class="tab-content hidden space-y-6">
             
             <div class="border-b border-stone-200 pb-4">
-                <h2 class="header-title text-2xl font-bold text-granja-700">Alternativas Nutritivas de Emergencia</h2>
-                <p class="text-sm text-stone-500">Si un ingrediente escasea o sube de precio, puedes sustituirlo inteligentemente sin perder postura.</p>
+                <h2 class="header-title text-2xl font-bold text-granja-700">Sustitutos y Alternativas de Nutrición</h2>
+                <p class="text-sm text-stone-500">Visualiza cada elemento de tu fórmula activa y selecciona entre 5 opciones viables para realizar un intercambio automático.</p>
             </div>
 
-            <!-- Grid de Reemplazos -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <!-- Tarjeta 1: Soya -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 text-xl"><i class="fa-solid fa-seedling"></i></div>
-                        <h3 class="font-bold text-lg text-granja-700 mb-2">Alternativas a la Soya</h3>
-                        <p class="text-sm text-stone-600 leading-relaxed mb-4">La soya es la fuente de proteína (16-18%). Si no encuentras, puedes sustituir una fracción por:</p>
-                        
-                        <ul class="text-xs text-stone-600 space-y-2.5">
-                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Harina de Alfalfa:</strong> Excelente digestibilidad y aporta pigmento a la yema.</span></li>
-                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Guandul Quebrado:</strong> Leguminosa local muy rica en proteína cruda.</span></li>
-                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Harina de Pescado:</strong> Máxima calidad proteica (usar máx 5% del lote para no alterar el sabor del huevo).</span></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Tarjeta 2: Carbonato de Calcio -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-4 text-xl"><i class="fa-solid fa-egg"></i></div>
-                        <h3 class="font-bold text-lg text-granja-700 mb-2">Cáscaras de Huevo Recicladas</h3>
-                        <p class="text-sm text-stone-600 leading-relaxed mb-4">Si la conchilla recolectada es inviable y no tienes carbonato de caliza comercial a la mano, recicla tus propias cáscaras:</p>
-                        
-                        <ol class="text-xs text-stone-600 space-y-2.5 list-decimal list-inside">
-                            <li><strong class="text-granja-700">Lavar:</strong> Enjuaga para quitar restos de clara.</li>
-                            <li><strong class="text-granja-700">Hornear:</strong> Tuesta a 275°F (135°C) por 20 minutos para eliminar bacterias (Salmonella).</li>
-                            <li><strong class="text-granja-700">Molido:</strong> Tritura hasta textura de arena. Mezcla directamente con el alimento.</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <!-- Tarjeta 3: Maíz / Maicillo -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 flex flex-col justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 mb-4 text-xl"><i class="fa-solid fa-bowl-rice"></i></div>
-                        <h3 class="font-bold text-lg text-granja-700 mb-2">Energéticos Alternativos</h3>
-                        <p class="text-sm text-stone-600 leading-relaxed mb-4">El Maíz y el Maicillo son la base de energía. Si sufren escasez extrema, recurre a:</p>
-                        
-                        <ul class="text-xs text-stone-600 space-y-2.5">
-                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Yuca Cocida (Fría):</strong> Gran aporte de carbohidratos. Debe servirse totalmente fría y en trozos muy pequeños.</span></li>
-                            <li class="flex items-start"><i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 mr-2"></i> <span><strong>Pulimento de Arroz:</strong> Subproducto económico que aporta grasas saludables y energía.</span></li>
-                            <li class="flex items-start"><i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 mr-2"></i> <span><strong>Evitar estrictamente:</strong> Cítricos (limón, naranja), aguacate (piel/semilla), cebolla y frijol crudo.</span></li>
-                        </ul>
-                    </div>
-                </div>
-
+            <!-- Contenedor dinámico de sustitutos -->
+            <div id="dynamic-replacements-container" class="space-y-8">
+                <!-- Se inyecta dinámicamente desde JS -->
             </div>
 
         </section>
@@ -608,16 +563,141 @@
 
     <!-- LÓGICA DE PROGRAMACIÓN DE LA APP -->
     <script>
-        // Configuración Inicial de Ingredientes (100 lbs) con soporte para Stock
+        // Configuración Inicial de Ingredientes (100 lbs) con soporte para Stock y Banco de 5 Sustitutos Reales
         let ingredients = [
-            { id: 'maiz', name: 'Maíz Amarillo Quebrado', qty: 27.5, price: 0.25, stock: 0, type: 'basic', options: ['Maíz Amarillo Quebrado', 'Maíz Blanco Quebrado'] },
-            { id: 'maicillo', name: 'Maicillo (Sorgo) Molido', qty: 27.5, price: 0.22, stock: 0, type: 'basic', options: ['Maicillo (Sorgo) Molido', 'Pulimento de Arroz'] },
-            { id: 'soya', name: 'Harina de Soya (Proteína)', qty: 25.0, price: 0.55, stock: 0, type: 'protein', options: ['Harina de Soya (Proteína)', 'Harina de Alfalfa', 'Harina de Pescado'] },
-            { id: 'salvado', name: 'Salvado de Trigo', qty: 8.0, price: 0.18, stock: 0, type: 'fiber', options: ['Salvado de Trigo', 'Afrecho de Cereal'] },
-            { id: 'calcio', name: 'Carbonato de Calcio', qty: 8.0, price: 0.12, stock: 0, type: 'calcium', options: ['Carbonato de Calcio', 'Piedra Caliza Molida', 'Cáscaras Horneadas'] },
-            { id: 'premix', name: 'Premix Vitaminas (Ponedora)', qty: 3.0, price: 1.80, stock: 0, type: 'premix', options: ['Premix Vitaminas (Ponedora)', 'Suplemento Concentrado'] },
-            { id: 'sal', name: 'Sal Común', qty: 1.0, price: 0.10, stock: 0, type: 'salt', options: ['Sal Común', 'Sal Mineralizada'] }
+            { 
+                id: 'maiz', 
+                name: 'Maíz Amarillo Quebrado', 
+                qty: 27.5, 
+                price: 0.25, 
+                stock: 0, 
+                type: 'energy', 
+                icon: 'fa-wheat-awn',
+                roleName: 'Energía Base (Principal)',
+                options: [], // Se sincronizará automáticamente
+                replacements: [
+                    { name: 'Maíz Amarillo Quebrado', price: 0.25, desc: 'Aporte tradicional, carotenos para yema naranja.' },
+                    { name: 'Maíz Blanco Quebrado', price: 0.24, desc: 'Excelente energía al midón, pigmentación más clara.' },
+                    { name: 'Sorgo (Maicillo) Molido', price: 0.22, desc: 'Grano local altamente digerible si va quebrado.' },
+                    { name: 'Trigo Quebrado Duro', price: 0.28, desc: 'Rico en energía digestible y algunas proteínas.' },
+                    { name: 'Yuca Deshidratada Molida', price: 0.18, desc: 'Gran concentrado de almidón económico libre de gluten.' }
+                ] 
+            },
+            { 
+                id: 'maicillo', 
+                name: 'Maicillo (Sorgo) Molido', 
+                qty: 27.5, 
+                price: 0.22, 
+                stock: 0, 
+                type: 'energy', 
+                icon: 'fa-seedling',
+                roleName: 'Energía Secundaria (Alterna)',
+                options: [],
+                replacements: [
+                    { name: 'Maicillo (Sorgo) Molido', price: 0.22, desc: 'Grano local rendidor de alta digestibilidad.' },
+                    { name: 'Maíz Amarillo Quebrado', price: 0.25, desc: 'Sube carotenos de yema y energía disponible.' },
+                    { name: 'Pulimento de Arroz', price: 0.20, desc: 'Subproducto graso rico en carbohidratos asimilables.' },
+                    { name: 'Semolina de Maíz', price: 0.23, desc: 'Subproducto de molienda fina fácil de digerir.' },
+                    { name: 'Yuca Cocida Fría', price: 0.15, desc: 'Almidón húmedo (frío), ideal para dar energía inmediata.' }
+                ]
+            },
+            { 
+                id: 'soya', 
+                name: 'Harina de Soya (Proteína)', 
+                qty: 25.0, 
+                price: 0.55, 
+                stock: 0, 
+                type: 'protein', 
+                icon: 'fa-cubes-stacked',
+                roleName: 'Sustento Proteico Principal',
+                options: [],
+                replacements: [
+                    { name: 'Harina de Soya (Proteína)', price: 0.55, desc: 'Concentrado ideal con perfil de aminoácidos completo.' },
+                    { name: 'Harina de Alfalfa', price: 0.40, desc: 'Aporte de proteína vegetal, fibra y pigmento natural.' },
+                    { name: 'Harina de Pescado', price: 0.75, desc: 'Proteína marina ultra asimilable (usar máximo al 5%).' },
+                    { name: 'Guandul Seco Quebrado', price: 0.35, desc: 'Leguminosa local rústica, excelente opción casera.' },
+                    { name: 'Harina de Hojas de Moringa', price: 0.50, desc: 'Superalimento proteico estimulante de la postura.' }
+                ]
+            },
+            { 
+                id: 'salvado', 
+                name: 'Salvado de Trigo', 
+                qty: 8.0, 
+                price: 0.18, 
+                stock: 0, 
+                type: 'fiber', 
+                icon: 'fa-leaf',
+                roleName: 'Soporte de Fibra y Volumen',
+                options: [],
+                replacements: [
+                    { name: 'Salvado de Trigo', price: 0.18, desc: 'Fibra estándar que mejora el tránsito intestinal.' },
+                    { name: 'Afrecho de Cereal', price: 0.16, desc: 'Subproducto económico para dar saciedad.' },
+                    { name: 'Cascarilla de Soya', price: 0.15, desc: 'Fibra muy liviana de excelente palatabilidad.' },
+                    { name: 'Salvado de Arroz', price: 0.17, desc: 'Contiene lípidos vegetales y fibras saludables.' },
+                    { name: 'Harina de Hojas de Neem', price: 0.30, desc: 'Fibra con propiedades medicinales desparasitantes.' }
+                ]
+            },
+            { 
+                id: 'calcio', 
+                name: 'Carbonato de Calcio', 
+                qty: 8.0, 
+                price: 0.12, 
+                stock: 0, 
+                type: 'calcium', 
+                icon: 'fa-egg',
+                roleName: 'Consolidación de Cascarón',
+                options: [],
+                replacements: [
+                    { name: 'Carbonato de Calcio', price: 0.12, desc: 'Mineral comercial estándar de asimilación rápida.' },
+                    { name: 'Piedra Caliza Molida', price: 0.10, desc: 'Excelente costo y aporte de calcio mineral pesado.' },
+                    { name: 'Conchilla de Ostra triturada', price: 0.18, desc: 'Calcio marino premium con liberación lenta nocturna.' },
+                    { name: 'Cáscaras Horneadas trituradas', price: 0.05, desc: 'Reciclaje de calcio 100% orgánico desinfectado.' },
+                    { name: 'Fosfato Dicálcico', price: 0.35, desc: 'Aporte balanceado de calcio y fósforo asimilable.' }
+                ]
+            },
+            { 
+                id: 'premix', 
+                name: 'Premix Vitaminas (Ponedora)', 
+                qty: 3.0, 
+                price: 1.80, 
+                stock: 0, 
+                type: 'premix', 
+                icon: 'fa-hand-holding-medical',
+                roleName: 'Micro-Nutrientes y Salud',
+                options: [],
+                replacements: [
+                    { name: 'Premix Vitaminas (Ponedora)', price: 1.80, desc: 'Suplemento básico comercial listo para mezclar.' },
+                    { name: 'Suplemento Aliansa Postura', price: 1.65, desc: 'Concentrado de vitaminas de marca local líder.' },
+                    { name: 'Núcleo Conacentro', price: 1.90, desc: 'Fórmula enriquecida con aminoácidos sintéticos.' },
+                    { name: 'Pre-mezcla Mineral Aba', price: 1.75, desc: 'Fuerte en microminerales esenciales de postura.' },
+                    { name: 'Complejo B + Electrolitos', price: 2.10, desc: 'Protección adicional contra el estrés calórico.' }
+                ]
+            },
+            { 
+                id: 'sal', 
+                name: 'Sal Común', 
+                qty: 1.0, 
+                price: 0.10, 
+                stock: 0, 
+                type: 'salt', 
+                icon: 'fa-circle-nodes',
+                roleName: 'Balance Osmótico y Sodio',
+                options: [],
+                replacements: [
+                    { name: 'Sal Común', price: 0.10, desc: 'Sal de mar refinada para estimular el apetito.' },
+                    { name: 'Sal Mineralizada', price: 0.15, desc: 'Aporte extra de azufre, yodo y cobalto.' },
+                    { name: 'Sal Marina Gruesa Molida', price: 0.12, desc: 'Sodio directo de salina con minerales traza.' },
+                    { name: 'Bicarbonato de Sodio', price: 0.25, desc: 'Ideal para veranos cálidos, fortalece cascarones.' },
+                    { name: 'Ceniza de Madera tratada', price: 0.05, desc: 'Aporte de minerales rústicos ricas en potasio.' }
+                ]
+            }
         ];
+
+        // Sincronizar automáticamente los dropdowns del mezclador con los sustitutos declarados
+        ingredients.forEach(item => {
+            item.options = [item.name, ...item.replacements.map(r => r.name)];
+            item.options = [...new Set(item.options)]; // Filtrar únicos
+        });
 
         // Definiciones de Fórmulas Preestablecidas
         const presets = {
@@ -666,9 +746,11 @@
             // Dar estilo de botón activo
             document.getElementById(`btn-${tabId}`).className = "tab-btn px-4 py-2 rounded-lg bg-granja-600 text-white transition-all";
 
-            // Si es la pestaña de inventario, sincronizar la planificación y renderizar la tabla base
+            // Sincronizar y renderizar vistas específicas al ingresar
             if (tabId === 'suppliers') {
                 togglePlanMode();
+            } else if (tabId === 'replacements') {
+                renderReplacements();
             }
         }
 
@@ -773,7 +855,7 @@
                     <td class="py-3 px-2 text-center">
                         <div class="flex items-center justify-center space-x-1">
                             <span class="text-stone-400">$</span>
-                            <input type="number" step="0.01" value="${item.price}" oninput="updateIngredientPrice(${index}, this.value)" class="w-16 text-center font-semibold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none">
+                            <input type="number" step="0.01" value="${item.price.toFixed(2)}" oninput="updateIngredientPrice(${index}, this.value)" class="w-16 text-center font-semibold border border-stone-200 focus:border-granja-600 rounded-lg p-1.5 outline-none">
                         </div>
                     </td>
                     <td id="subtotal-${index}" class="py-3 pl-2 text-right font-bold text-stone-700">$${subtotal.toFixed(2)}</td>
@@ -786,7 +868,15 @@
         // Guardar cambios del selector de alternativas
         function updateIngredientName(index, newName) {
             ingredients[index].name = newName;
+            
+            // Buscar si el nuevo ingrediente está en el banco de sustitutos para actualizar su precio sugerido automáticamente
+            const replacementDef = ingredients[index].replacements.find(r => r.name === newName);
+            if (replacementDef) {
+                ingredients[index].price = replacementDef.price;
+            }
+
             calculateCoreMetrics();
+            renderMixer();
             // Refrescar estructura del inventario por si cambiaron los nombres alternativos
             renderInventoryTable();
         }
@@ -910,6 +1000,82 @@
             renderMixer();
             renderInventoryTable();
             showToast("Mezcla restablecida a valores originales");
+        }
+
+        /* --- LÓGICA DE SUSTITUTOS DINÁMICOS (5 OPCIONES INTERACTIVAS) --- */
+        
+        // Renderizar la pestaña de Sustitutos interactivos
+        function renderReplacements() {
+            const container = document.getElementById('dynamic-replacements-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            ingredients.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl p-6 shadow-sm border border-stone-200 space-y-4";
+                
+                // Construir las 5 tarjetas de reemplazos
+                let replacementGrid = '';
+                item.replacements.forEach(rep => {
+                    const isActive = item.name === rep.name;
+                    const buttonText = isActive ? '<i class="fa-solid fa-circle-check"></i> Activo' : 'Cambiar a este';
+                    const buttonClass = isActive 
+                        ? 'bg-emerald-600 text-white font-bold cursor-default shadow-sm'
+                        : 'bg-amber-500 hover:bg-amber-600 text-granja-800 font-extrabold hover:scale-[1.02] active:scale-95';
+
+                    replacementGrid += `
+                        <div class="border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all ${isActive ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/10' : 'border-stone-200 bg-stone-50/50'}">
+                            <div class="space-y-1">
+                                <h4 class="font-bold text-sm text-stone-800 leading-tight">${rep.name}</h4>
+                                <span class="inline-block text-xxs font-black text-amber-700 bg-amber-100/50 px-2 py-0.5 rounded-lg">$${rep.price.toFixed(2)} / lb</span>
+                                <p class="text-xxs text-stone-500 leading-relaxed mt-1.5">${rep.desc}</p>
+                            </div>
+                            <button ${isActive ? 'disabled' : `onclick="swapIngredient(${index}, '${rep.name}', ${rep.price})"`} class="w-full text-center py-2 rounded-xl text-xs transition-all ${buttonClass}">
+                                ${buttonText}
+                            </button>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-stone-100 pb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="p-3 rounded-2xl bg-granja-50 text-granja-600 text-xl"><i class="fa-solid ${item.icon}"></i></span>
+                            <div>
+                                <h3 class="font-black text-base text-granja-800 leading-none">${item.roleName}</h3>
+                                <p class="text-xxs text-stone-400 mt-1 font-semibold uppercase tracking-wider">Lote actual: ${item.qty.toFixed(1)} lbs</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-1.5 rounded-2xl text-xs font-bold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+                            <span>En fórmula: ${item.name}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
+                        ${replacementGrid}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Ejecutar el intercambio de ingrediente en la fórmula
+        function swapIngredient(index, newName, price) {
+            const previousName = ingredients[index].name;
+            ingredients[index].name = newName;
+            ingredients[index].price = price;
+
+            // Asegurar que la opción quede dentro de "options" por coherencia con el Mezclador
+            if (!ingredients[index].options.includes(newName)) {
+                ingredients[index].options.push(newName);
+            }
+
+            calculateCoreMetrics();
+            renderMixer();
+            renderReplacements(); // Refrescar vista actual
+            showToast(`Sustituido: "${previousName}" por "${newName}"`);
         }
 
         /* --- LÓGICA EXCLUSIVA DEL INVENTARIO Y CONTROL DE BODEGA (FOCO SEGURO) --- */
@@ -1214,3 +1380,4 @@
     </script>
 </body>
 </html>
+
